@@ -1,5 +1,5 @@
 use ds4_sound_link::protocol::OutputRoute;
-use ds4_sound_link::stream::{StreamConfig, run};
+use ds4_sound_link::stream::{StreamConfig, run, run_virtual};
 use ds4_sound_link::{Result, invalid_input};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -30,7 +30,13 @@ fn entry() -> Result<()> {
         signal(2, stop_signal);
         signal(15, stop_signal);
     }
-    let stats = run(config, &STOP)?;
+    let direct_mode =
+        config.test_tone || config.source.is_some() || config.route == OutputRoute::InternalSpeaker;
+    let stats = if direct_mode {
+        run(config, &STOP)?
+    } else {
+        run_virtual(config, &STOP)?
+    };
     println!(
         "stopped: {} packets, {} SBC frames, {} underruns, {} dropped frames",
         stats.packets_sent, stats.frames_encoded, stats.underruns, stats.dropped_frames
@@ -66,6 +72,12 @@ fn parse_arguments() -> Result<Option<StreamConfig>> {
                 if !(0.5..=2.5).contains(&config.gain) {
                     return Err(invalid_input("--gain must be between 0.5 and 2.5"));
                 }
+            }
+            "--fade" => {
+                let seconds = value(&mut arguments, "--fade")?.parse::<f64>()?;
+                config.fade = Some(Duration::try_from_secs_f64(seconds).map_err(|_| {
+                    invalid_input("--fade must be a finite, nonnegative number of seconds")
+                })?);
             }
             "--duration" => {
                 let seconds = value(&mut arguments, "--duration")?.parse::<u64>()?;
@@ -113,11 +125,12 @@ fn print_help() {
          \x20   --list-controllers      List Bluetooth DS4 hidraw devices\n\
          \x20   --controller MAC        Select a controller by Bluetooth address\n\
          \x20   --device PATH           Select a hidraw device explicitly\n\
-         \x20   --source NAME           PulseAudio/PipeWire monitor source\n\
-         \x20                           (default: @DEFAULT_MONITOR@)\n\
-         \x20   --speaker               Use the internal speaker instead of headphones\n\
+         \x20   --source NAME           Capture an existing monitor directly instead of\n\
+         \x20                           creating the two virtual DS4 output devices\n\
+         \x20   --speaker               Direct internal-speaker mode instead of virtual devices\n\
          \x20   --volume 0..79          DS4 hardware volume (default: 60)\n\
          \x20   --gain 0.5..2.5         Software capture gain (default: 1.0)\n\
+         \x20   --fade SECONDS          Enable start/stop fading (for example: --fade 0.5)\n\
          \x20   --duration SECONDS      Stop automatically after a duration\n\
          \x20   --test-tone             Send a quiet 440 Hz tone instead of capturing audio\n\
          \x20   -h, --help              Show this help\n\

@@ -1,9 +1,11 @@
 pub mod capture;
+pub mod fade;
 pub mod hid;
 pub mod protocol;
 pub mod resampler;
 pub mod sbc;
 pub mod stream;
+pub mod virtual_sinks;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;
 pub type Result<T> = std::result::Result<T, Error>;
