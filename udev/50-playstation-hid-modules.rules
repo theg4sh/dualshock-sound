@@ -1,0 +1,3 @@
+# Load Bluetooth HID and PlayStation support when an adapter appears
+ACTION=="add", SUBSYSTEM=="bluetooth", KERNEL=="hci[0-9]*", RUN+="/usr/bin/modprobe hidp"
+ACTION=="add", SUBSYSTEM=="bluetooth", KERNEL=="hci[0-9]*", RUN+="/usr/bin/modprobe hid_playstation"

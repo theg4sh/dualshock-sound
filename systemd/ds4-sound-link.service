@@ -1,0 +1,12 @@
+[Unit]
+Description=DualShock 4 PipeWire audio sinks
+After=pipewire.service pipewire-pulse.service wireplumber.service
+StopWhenUnneeded=true
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ds4-sound-link
+Restart=on-failure
+RestartSec=3s
+NoNewPrivileges=true
+PrivateTmp=true

@@ -1,0 +1,5 @@
+# DualShock 4 CUH-ZCT2E (054c:09cc) over Bluetooth
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ATTRS{modalias}=="hid:b0005g*v0000054Cp000009CC", MODE="0660", TAG+="uaccess", TAG+="systemd", ENV{SYSTEMD_USER_WANTS}+="ds4-sound-link.service"
+
+# DualShock 4 CUH-ZCT2E over USB
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="09cc", MODE="0660", TAG+="uaccess"
