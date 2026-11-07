@@ -41,8 +41,8 @@ if (( ${#missing[@]} > 0 )); then
     exit 1
 fi
 
-if ! modinfo hid_playstation | grep -i 'v0000054Cp000009CC' >/dev/null; then
-    echo "hid_playstation does not advertise CUH-ZCT2E (054c:09cc) support." >&2
+if ! modinfo hid_playstation | grep -i 'v0000054C' >/dev/null; then
+    echo "hid_playstation does not advertise Sony PlayStation controller support." >&2
     exit 1
 fi
 
