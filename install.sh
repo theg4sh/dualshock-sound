@@ -6,7 +6,7 @@ SERVICE_NAME=ds4-sound-link.service
 BINARY_NAME=ds4-sound-link
 
 usage() {
-    echo "Usage: $0 [--install|--uninstall|--help]"
+    echo "Usage: $0 [--install|--uninstall] [--node-latency FRAMES/RATE]"
 }
 
 if (( EUID == 0 )); then
@@ -14,41 +14,65 @@ if (( EUID == 0 )); then
     exit 1
 fi
 
-case ${1:-} in
-    --help|-h)
-        usage
-        exit 0
-        ;;
-    --uninstall)
-        if (( $# != 1 )); then
+action=install
+node_latency=
+while (( $# > 0 )); do
+    case $1 in
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        --install)
+            action=install
+            shift
+            ;;
+        --uninstall)
+            action=uninstall
+            shift
+            ;;
+        --node-latency)
+            if (( $# < 2 )); then
+                echo "--node-latency requires FRAMES/RATE" >&2
+                exit 2
+            fi
+            node_latency=$2
+            shift 2
+            ;;
+        --node-latency=*)
+            node_latency=${1#*=}
+            shift
+            ;;
+        *)
             usage >&2
             exit 2
-        fi
-        systemctl --user stop "$SERVICE_NAME" 2>/dev/null || true
-        sudo -v
-        sudo rm -f \
-            "/usr/local/bin/$BINARY_NAME" \
-            "/etc/systemd/user/$SERVICE_NAME" \
-            /etc/udev/rules.d/50-playstation-hid-modules.rules \
-            /etc/udev/rules.d/70-ds4-cuh-zct2e.rules
-        sudo udevadm control --reload-rules
-        sudo udevadm trigger --action=change --subsystem-match=hidraw
-        systemctl --user daemon-reload
-        systemctl --user reset-failed "$SERVICE_NAME" 2>/dev/null || true
-        echo "DS4 Sound Link removed. Packages, Bluetooth, and kernel modules were left unchanged."
-        exit 0
-        ;;
-    --install|'')
-        if (( $# > 1 )); then
-            usage >&2
-            exit 2
-        fi
-        ;;
-    *)
-        usage >&2
+            ;;
+    esac
+done
+
+if [[ -n $node_latency && ! $node_latency =~ ^[1-9][0-9]*/[1-9][0-9]*$ ]]; then
+    echo "--node-latency must use positive FRAMES/RATE values" >&2
+    exit 2
+fi
+
+if [[ $action == uninstall ]]; then
+    if [[ -n $node_latency ]]; then
+        echo "--node-latency cannot be combined with --uninstall" >&2
         exit 2
-        ;;
-esac
+    fi
+    systemctl --user stop "$SERVICE_NAME" 2>/dev/null || true
+    sudo -v
+    sudo rm -f \
+        "/usr/local/bin/$BINARY_NAME" \
+        "/etc/systemd/user/$SERVICE_NAME" \
+        /etc/udev/rules.d/50-playstation-hid-modules.rules \
+        /etc/udev/rules.d/70-ds4-cuh-zct2e.rules
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger --action=change --subsystem-match=hidraw
+    systemctl --user daemon-reload
+    systemctl --user reset-failed "$SERVICE_NAME" 2>/dev/null || true
+    echo "DS4 Sound Link removed. Packages, Bluetooth, and kernel modules were left unchanged."
+    exit 0
+fi
 
 missing=()
 for command in cc cargo clang pkg-config bluetoothctl modinfo modprobe udevadm; do
@@ -84,6 +108,11 @@ done
 sudo install -Dm644 \
     "$ROOT_DIR/systemd/$SERVICE_NAME" \
     "/etc/systemd/user/$SERVICE_NAME"
+if [[ -n $node_latency ]]; then
+    sudo sed -i \
+        "s|^ExecStart=.*|ExecStart=/usr/local/bin/$BINARY_NAME --node-latency $node_latency|" \
+        "/etc/systemd/user/$SERVICE_NAME"
+fi
 
 sudo udevadm control --reload-rules
 sudo udevadm trigger --action=change --subsystem-match=hidraw

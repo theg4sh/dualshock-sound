@@ -114,7 +114,15 @@ ds4-sound-link --node-latency 256/48000
 
 This is a PipeWire suggestion, not a guarantee; the graph can select a different quantum. Lower values can increase scheduling pressure and audio underruns.
 
-This setting does not change the separate DS4 SBC jitter buffer or Bluetooth transport delay. For the installed service, append the option to the `ExecStart` override described below.
+This setting does not change the separate DS4 SBC jitter buffer or Bluetooth transport delay.
+
+To persist the setting in the installed service, pass it to the installer:
+
+```bash
+./install.sh --node-latency 512/48000
+```
+
+The installer writes the option into the service's `ExecStart` command. Reinstalling without `--node-latency` restores the server-selected default.
 
 ## Optional fading
 
