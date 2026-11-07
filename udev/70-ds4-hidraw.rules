@@ -1,0 +1,9 @@
+# DualShock 4 v1, v2 and variant over Bluetooth
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ATTRS{modalias}=="hid:b0005g*v0000054Cp000005C4", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ATTRS{modalias}=="hid:b0005g*v0000054Cp000009CC", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ATTRS{modalias}=="hid:b0005g*v0000054Cp000005C5", MODE="0660", TAG+="uaccess"
+
+# DualShock 4 v1, v2 and variant over USB
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="05c4", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="09cc", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="05c5", MODE="0660", TAG+="uaccess"

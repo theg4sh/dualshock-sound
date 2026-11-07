@@ -1,0 +1,20 @@
+[package]
+name = "ds4-sound-link"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "DualShock 4 Bluetooth audio streaming for Linux"
+
+[lib]
+name = "ds4_sound_link"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ds4-sound-link"
+path = "src/main.rs"
+
+[dependencies]
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

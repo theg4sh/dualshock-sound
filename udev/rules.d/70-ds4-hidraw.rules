@@ -1,0 +1,5 @@
+# DualShock 4 v2 (054c:09cc) over Bluetooth
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ENV{HID_ID}=="0005:0000054C:000009CC", MODE="0660", TAG+="uaccess"
+
+# DualShock 4 v2 over USB
+SUBSYSTEM=="hidraw", KERNEL=="hidraw[0-9]*", ATTRS{idVendor}=="054c", ATTRS{idProduct}=="09cc", MODE="0660", TAG+="uaccess"
