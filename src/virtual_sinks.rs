@@ -1,4 +1,18 @@
-use crate::Result;
+use crate::{Result, invalid_input};
+
+pub fn parse_node_latency(value: &str) -> Result<String> {
+    let (frames, rate) = value
+        .split_once('/')
+        .ok_or_else(|| invalid_input("node latency must use the FRAMES/RATE form"))?;
+    let valid = frames.parse::<u32>().is_ok_and(|frames| frames > 0)
+        && rate.parse::<u32>().is_ok_and(|rate| rate > 0);
+    if !valid {
+        return Err(invalid_input(
+            "node latency must contain positive integers in FRAMES/RATE form",
+        ));
+    }
+    Ok(value.to_owned())
+}
 use pipewire as pw;
 use pw::properties::properties;
 use pw::spa;
@@ -25,6 +39,7 @@ pub fn run(
     stop: Arc<AtomicBool>,
     external_stop: &'static AtomicBool,
     duration: Option<Duration>,
+    node_latency: Option<&str>,
 ) -> Result<()> {
     pw::init();
     let mainloop = pw::main_loop::MainLoopRc::new(None)?;
@@ -37,6 +52,7 @@ pub fn run(
         "DS4 Headphones",
         headphone_sender,
         Arc::clone(&stop),
+        node_latency,
     )?;
     let (_speaker, _speaker_listener) = create_sink(
         &core,
@@ -44,6 +60,7 @@ pub fn run(
         "DS4 Speaker",
         speaker_sender,
         Arc::clone(&stop),
+        node_latency,
     )?;
 
     let started = Instant::now();
@@ -72,26 +89,27 @@ fn create_sink<'c>(
     description: &str,
     sender: SyncSender<Vec<f32>>,
     stop: Arc<AtomicBool>,
+    node_latency: Option<&str>,
 ) -> Result<(
     pw::stream::StreamBox<'c>,
     pw::stream::StreamListener<SinkData>,
 )> {
-    let stream = pw::stream::StreamBox::new(
-        core,
-        node_name,
-        properties! {
-            *pw::keys::MEDIA_TYPE => "Audio",
-            *pw::keys::MEDIA_CATEGORY => "Playback",
-            *pw::keys::MEDIA_ROLE => "Music",
-            *pw::keys::MEDIA_CLASS => "Audio/Sink",
-            *pw::keys::NODE_NAME => node_name,
-            *pw::keys::NODE_DESCRIPTION => description,
-            *pw::keys::NODE_VIRTUAL => "true",
-            "audio.rate" => "48000",
-            *pw::keys::AUDIO_CHANNELS => "2",
-            "audio.position" => "FL,FR",
-        },
-    )?;
+    let mut properties = properties! {
+        *pw::keys::MEDIA_TYPE => "Audio",
+        *pw::keys::MEDIA_CATEGORY => "Playback",
+        *pw::keys::MEDIA_ROLE => "Music",
+        *pw::keys::MEDIA_CLASS => "Audio/Sink",
+        *pw::keys::NODE_NAME => node_name,
+        *pw::keys::NODE_DESCRIPTION => description,
+        *pw::keys::NODE_VIRTUAL => "true",
+        "audio.rate" => "48000",
+        *pw::keys::AUDIO_CHANNELS => "2",
+        "audio.position" => "FL,FR",
+    };
+    if let Some(latency) = node_latency {
+        properties.insert("node.latency", latency);
+    }
+    let stream = pw::stream::StreamBox::new(core, node_name, properties)?;
     let data = SinkData {
         format: Default::default(),
         sender,
@@ -167,4 +185,31 @@ fn create_sink<'c>(
         &mut params,
     )?;
     Ok((stream, listener))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepts_latency_fraction() {
+        assert_eq!("512/48000", parse_node_latency("512/48000").unwrap());
+        assert_eq!("256/44100", parse_node_latency("256/44100").unwrap());
+    }
+
+    #[test]
+    fn rejects_invalid_latency_values() {
+        for value in [
+            "512",
+            "0/48000",
+            "512/0",
+            "512/48000/1",
+            "ms/48000",
+            "512/ms",
+            "/48000",
+            "512/",
+        ] {
+            assert!(parse_node_latency(value).is_err(), "accepted {value}");
+        }
+    }
 }

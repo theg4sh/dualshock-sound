@@ -100,6 +100,22 @@ systemctl --user stop ds4-sound-link.service
 journalctl --user -u ds4-sound-link.service -f
 ```
 
+## PipeWire latency
+
+PipeWire selects the graph latency by default. Suggest a different value for both DS4 sinks with `--node-latency FRAMES/RATE`:
+
+```bash
+# 512 frames at 48 kHz = 10.67 ms
+ds4-sound-link --node-latency 512/48000
+
+# 256 frames at 48 kHz = 5.33 ms
+ds4-sound-link --node-latency 256/48000
+```
+
+This is a PipeWire suggestion, not a guarantee; the graph can select a different quantum. Lower values can increase scheduling pressure and audio underruns.
+
+This setting does not change the separate DS4 SBC jitter buffer or Bluetooth transport delay. For the installed service, append the option to the `ExecStart` override described below.
+
 ## Optional fading
 
 Fading is disabled by default. Enable a 0.5-second start/stop envelope with:

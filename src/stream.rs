@@ -24,6 +24,7 @@ pub struct StreamConfig {
     pub device: Option<PathBuf>,
     pub controller: Option<String>,
     pub source: Option<String>,
+    pub node_latency: Option<String>,
     pub route: OutputRoute,
     pub volume: u8,
     pub gain: f32,
@@ -38,6 +39,7 @@ impl Default for StreamConfig {
             device: None,
             controller: None,
             source: None,
+            node_latency: None,
             route: OutputRoute::Headphones,
             volume: 60,
             gain: 1.0,
@@ -350,6 +352,7 @@ pub fn run_virtual(
         Arc::clone(&stop),
         external_stop,
         config.duration,
+        config.node_latency.as_deref(),
     );
     stop.store(true, Ordering::Relaxed);
     let worker_result = worker

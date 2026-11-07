@@ -58,6 +58,14 @@ fn parse_arguments() -> Result<Option<StreamConfig>> {
             "--device" => config.device = Some(PathBuf::from(value(&mut arguments, "--device")?)),
             "--controller" => config.controller = Some(value(&mut arguments, "--controller")?),
             "--source" => config.source = Some(value(&mut arguments, "--source")?),
+            "--node-latency" => {
+                let raw = value(&mut arguments, "--node-latency")?;
+                config.node_latency = Some(
+                    ds4_sound_link::virtual_sinks::parse_node_latency(&raw).map_err(|_| {
+                        invalid_input("--node-latency must use positive FRAMES/RATE values")
+                    })?,
+                );
+            }
             "--speaker" => config.route = OutputRoute::InternalSpeaker,
             "--volume" => {
                 let raw = value(&mut arguments, "--volume")?;
@@ -131,6 +139,7 @@ fn print_help() {
          \x20   --volume 0..79          DS4 hardware volume (default: 60)\n\
          \x20   --gain 0.5..2.5         Software capture gain (default: 1.0)\n\
          \x20   --fade SECONDS          Enable start/stop fading (for example: --fade 0.5)\n\
+         \x20   --node-latency N/RATE   Suggest PipeWire latency (for example: 512/48000)\n\
          \x20   --duration SECONDS      Stop automatically after a duration\n\
          \x20   --test-tone             Send a quiet 440 Hz tone instead of capturing audio\n\
          \x20   -h, --help              Show this help\n\
