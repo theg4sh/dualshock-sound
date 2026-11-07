@@ -104,17 +104,47 @@ journalctl --user -u ds4-sound-link.service -f
 
 PipeWire selects the graph latency by default. Suggest a different value for both DS4 sinks with `--node-latency FRAMES/RATE`:
 
-```bash
-# 512 frames at 48 kHz = 10.67 ms
-ds4-sound-link --node-latency 512/48000
+| Setting at 48 kHz | Buffer time |
+| --- | ---: |
+| `256/48000` | 5.33 ms |
+| `512/48000` | 10.67 ms |
+| `768/48000` | 16.00 ms |
+| `1024/48000` | 21.33 ms |
 
-# 256 frames at 48 kHz = 5.33 ms
-ds4-sound-link --node-latency 256/48000
+For example:
+
+```bash
+ds4-sound-link --node-latency 512/48000
 ```
 
 This is a PipeWire suggestion, not a guarantee; the graph can select a different quantum. Lower values can increase scheduling pressure and audio underruns.
 
-This setting does not change the separate DS4 SBC jitter buffer or Bluetooth transport delay.
+### DS4 latency budget
+
+Code inspection and runtime logs indicate the following additional delay beyond PipeWire scheduling:
+
+- Initial priming is 20 SBC frames, or **80 ms**.
+- One outgoing report adds up to **16 ms**.
+- Typical steady-state buffering observed during hardware tests was approximately **48–80 ms**, including a report.
+- The encoded queue ceiling is 96 frames, or **384 ms**, which can produce roughly **400 ms** of delay under sustained scheduling pressure.
+
+Consequently, a normal DS4 output path is roughly **70–120 ms before Bluetooth transport**. This is an estimate from buffering, not an end-to-end hardware measurement. `--node-latency` does not change the SBC jitter buffer, Bluetooth delay, or optional fade duration.
+
+### Tuning procedure
+
+1. Disable fading for latency-sensitive testing and select a physical microphone in Steam. The `ds4_sound_link_*.monitor` sources are output loopbacks, not DS4 microphones.
+2. Start with `512/48000`. If it is stable, try `256/48000`; if underruns or crackling appear, return to `512/48000` or try `768/48000`/`1024/48000`.
+3. Compare the same microphone and Steam session with the built-in analog output and then the DS4 output. The difference isolates DS4 latency from Steam, network, and microphone latency.
+4. Inspect scheduling and DS4 buffer health while audio is active:
+
+   ```bash
+   pw-top -b -n 5
+   pactl list short sink-inputs
+   pactl list short source-outputs
+   journalctl --user -u ds4-sound-link.service -n 100 --no-pager
+   ```
+
+Avoid forcing a system-wide quantum for this feature. A global forced value also affects microphones and other applications and can make duplex performance worse.
 
 To persist the setting in the installed service, pass it to the installer:
 
