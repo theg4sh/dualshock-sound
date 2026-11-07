@@ -51,25 +51,26 @@ case ${1:-} in
         ;;
 esac
 
-if ! command -v pacman >/dev/null 2>&1; then
-    echo "This installer currently supports Arch Linux with pacman." >&2
+missing=()
+for command in cc cargo clang pkg-config bluetoothctl modinfo modprobe udevadm; do
+    if ! command -v "$command" >/dev/null 2>&1; then
+        missing+=("$command")
+    fi
+done
+if ! pkg-config --exists libpipewire-0.3; then
+    missing+=("PipeWire development files")
+fi
+if ! pkg-config --exists libpulse-simple; then
+    missing+=("PulseAudio client development files")
+fi
+if (( ${#missing[@]} > 0 )); then
+    printf 'Missing dependencies: %s\n' "${missing[*]}" >&2
+    echo "Install the packages listed in $ROOT_DIR/README.md#dependencies and try again." >&2
     exit 1
 fi
 
-sudo -v
-sudo pacman -S --needed --noconfirm \
-    base-devel \
-    rust \
-    clang \
-    pkgconf \
-    pipewire \
-    pipewire-pulse \
-    wireplumber \
-    libpulse \
-    bluez \
-    bluez-utils
-
 cargo build --release --locked --manifest-path "$ROOT_DIR/Cargo.toml"
+sudo -v
 
 sudo systemctl enable --now bluetooth.service
 sudo modprobe hidp hid_playstation

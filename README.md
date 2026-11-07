@@ -18,10 +18,43 @@ This is experimental software using reverse-engineered controller protocols. It 
 Currently supported:
 
 - DualShock 4 CUH-ZCT2E (`054c:09cc`) over Bluetooth.
-- PipeWire with WirePlumber and `pipewire-pulse`.
-- Arch Linux with `pacman` for the automated installer.
+- Linux with systemd, udev, PipeWire, WirePlumber, and `pipewire-pulse`.
 
 DualSense, USB audio streaming, and other DS4 models are not enabled by the installed CUH-ZCT2E rule.
+
+## Dependencies
+
+The installer does not install distribution packages. Install the build and runtime dependencies before running it:
+
+- A C compiler, Rust/Cargo, Clang/libclang, and `pkg-config`.
+- PipeWire development files and PulseAudio client development files.
+- PipeWire, WirePlumber, `pipewire-pulse`, BlueZ, systemd, and udev.
+- A kernel providing the `hidp` and `hid_playstation` modules.
+
+Package names for common distributions:
+
+**Arch Linux**
+
+```bash
+sudo pacman -S --needed base-devel rust clang pkgconf \
+  pipewire pipewire-pulse wireplumber libpulse bluez bluez-utils
+```
+
+**Debian / Ubuntu**
+
+```bash
+sudo apt install build-essential cargo rustc clang libclang-dev pkg-config \
+  libpipewire-0.3-dev libpulse-dev pipewire pipewire-pulse wireplumber bluez
+```
+
+**Fedora**
+
+```bash
+sudo dnf install gcc make cargo rust clang clang-devel pkgconf-pkg-config \
+  pipewire-devel pulseaudio-libs-devel pipewire-pulseaudio wireplumber bluez
+```
+
+Package names and PipeWire integration packages can differ between distribution releases. For other distributions, install the equivalent development and runtime packages listed above.
 
 ## Installation
 
@@ -31,11 +64,11 @@ Pair and connect the controller first, then run:
 ./install.sh
 ```
 
-Run the installer as your regular desktop user, not as root. It uses `sudo` for packages and system files.
+Run the installer as your regular desktop user, not as root. It uses `sudo` only for system files and services.
 
 The installer:
 
-1. Installs the required build and runtime packages.
+1. Checks the required build dependencies.
 2. Builds the Rust release binary.
 3. Enables Bluetooth and loads `hidp` and `hid_playstation`.
 4. Installs `/usr/local/bin/ds4-sound-link`.
