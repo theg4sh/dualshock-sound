@@ -30,8 +30,7 @@ case ${1:-} in
             "/usr/local/bin/$BINARY_NAME" \
             "/etc/systemd/user/$SERVICE_NAME" \
             /etc/udev/rules.d/50-playstation-hid-modules.rules \
-            /etc/udev/rules.d/70-ds4-cuh-zct2e.rules \
-            /etc/udev/rules.d/70-ds4-hidraw.rules
+            /etc/udev/rules.d/70-ds4-cuh-zct2e.rules
         sudo udevadm control --reload-rules
         sudo udevadm trigger --action=change --subsystem-match=hidraw
         systemctl --user daemon-reload
